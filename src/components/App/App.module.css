@@ -1,32 +1,16 @@
-.app {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  gap: 20px;
-}
-
-.gridTop {
-  scroll-margin-top: var(--header-h, 64px);
-}
-
 .grid {
-  --gap: 12px;
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gap);
+  gap: 16px;
   list-style: none;
   padding: 0;
   margin: 0;
-  width: 100%;
 }
 
 .card {
-  flex: 1 1 100%;
-  max-width: 100%;
+  flex: 0 0 calc((100% - 16px * 4) / 5);
+  max-width: calc((100% - 16px * 4) / 5);
   display: flex;
   flex-direction: column;
   border-radius: 12px;
@@ -39,10 +23,16 @@
   aspect-ratio: 2 / 3;
   object-fit: cover;
   display: block;
+  background: #2a2a2a;
 }
 
 .body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 10px 12px;
+  color: #fff;
 }
 
 .title {
@@ -52,8 +42,8 @@
 }
 
 .meta {
-  margin: 0 0 6px;
-  opacity: 0.8;
+  margin: 0;
+  opacity: .8;
   font-size: 14px;
 }
 
@@ -86,25 +76,4 @@
   background-color: #0a66c2;
   color: #fff;
   font-weight: 700;
-}
-
-@media (min-width: 768px) and (orientation: portrait) {
-  .card {
-    flex-basis: calc((100% - var(--gap)) / 2);
-    max-width: calc((100% - var(--gap)) / 2);
-  }
-}
-
-@media (min-width: 768px) and (orientation: landscape) {
-  .card {
-    flex-basis: calc((100% - 2 * var(--gap)) / 3);
-    max-width: calc((100% - 2 * var(--gap)) / 3);
-  }
-}
-
-@media (min-width: 1200px) {
-  .card {
-    flex-basis: calc((100% - 3 * var(--gap)) / 4);
-    max-width: calc((100% - 3 * var(--gap)) / 4);
-  }
 }

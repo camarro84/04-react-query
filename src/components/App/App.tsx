@@ -19,7 +19,6 @@ export default function App() {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
 
-  // Стартовый поиск — всегда страница 1
   const handleSearch = async (q: string) => {
     setMovies([]);
     setHasError(false);
@@ -27,9 +26,7 @@ export default function App() {
     setQuery(q);
     setPage(1);
     setTotalPages(0);
-
     if (!q.trim()) return;
-
     try {
       setIsLoading(true);
       const data = await fetchMovies(q, 1);
@@ -40,25 +37,21 @@ export default function App() {
       setHasError(true);
     } finally {
       setIsLoading(false);
-      // прокрутка к началу гриды, если у тебя есть соответствующий якорь
-      // (оставляю без сторонних ref/observer)
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // Переход по страницам пагинации
   const handlePageChange = async ({ selected }: { selected: number }) => {
     if (!query) return;
     const nextPage = selected + 1;
     if (nextPage === page) return;
-
     try {
       setIsLoading(true);
       setHasError(false);
       const data = await fetchMovies(query, nextPage);
-      setMovies(data.results);         // при пагинации показываем страницу, а не накапливаем
+      setMovies(data.results);
       setPage(nextPage);
-      setTotalPages(data.total_pages); // TMDB возвращает на каждой странице
+      setTotalPages(data.total_pages);
     } catch {
       setHasError(true);
     } finally {
@@ -78,15 +71,14 @@ export default function App() {
         <>
           <MovieGrid movies={movies} onSelect={setSelected} />
 
-          {/* Пагинация только если страниц > 1 (по ТЗ) */}
           {totalPages > 1 && (
             <ReactPaginate
-              pageCount={Math.min(totalPages, 500)} // лимит TMDB
+              pageCount={Math.min(totalPages, 500)}
               pageRangeDisplayed={5}
               marginPagesDisplayed={1}
               onPageChange={handlePageChange}
               forcePage={page - 1}
-              containerClassName={styles.pagination}
+              className={styles.pagination}
               activeClassName={styles.active}
               nextLabel="→"
               previousLabel="←"
