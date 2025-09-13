@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import SearchBar from "../SearchBar/SearchBar";
 import MovieGrid from "../MovieGrid/MovieGrid";
@@ -7,6 +7,7 @@ import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import MovieModal from "../MovieModal/MovieModal";
 import type { Movie } from "../../types/movie";
 import { fetchMovies } from "../../services/movieService";
+import ReactPaginate from "react-paginate";
 import styles from "./App.module.css";
 
 export default function App() {
@@ -18,10 +19,7 @@ export default function App() {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
 
-  const gridTopRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const ioSupported = typeof window !== "undefined" && "IntersectionObserver" in window;
-
+  // Стартовый поиск — всегда страница 1
   const handleSearch = async (q: string) => {
     setMovies([]);
     setHasError(false);
@@ -29,6 +27,9 @@ export default function App() {
     setQuery(q);
     setPage(1);
     setTotalPages(0);
+
+    if (!q.trim()) return;
+
     try {
       setIsLoading(true);
       const data = await fetchMovies(q, 1);
@@ -39,47 +40,36 @@ export default function App() {
       setHasError(true);
     } finally {
       setIsLoading(false);
-      gridTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // прокрутка к началу гриды, если у тебя есть соответствующий якорь
+      // (оставляю без сторонних ref/observer)
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  const handleLoadMore = async () => {
-    if (!query || isLoading || page >= totalPages) return;
+  // Переход по страницам пагинации
+  const handlePageChange = async ({ selected }: { selected: number }) => {
+    if (!query) return;
+    const nextPage = selected + 1;
+    if (nextPage === page) return;
+
     try {
       setIsLoading(true);
-      const nextPage = page + 1;
+      setHasError(false);
       const data = await fetchMovies(query, nextPage);
-      setMovies((prev) => [...prev, ...data.results]);
+      setMovies(data.results);         // при пагинации показываем страницу, а не накапливаем
       setPage(nextPage);
+      setTotalPages(data.total_pages); // TMDB возвращает на каждой странице
     } catch {
       setHasError(true);
     } finally {
       setIsLoading(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  useEffect(() => {
-    if (!ioSupported) return;
-    const node = sentinelRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) handleLoadMore();
-      },
-      { root: null, rootMargin: "300px 0px 300px 0px", threshold: 0 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ioSupported, query, page, totalPages, isLoading]);
 
   return (
     <div className={styles.app}>
       <SearchBar onSubmit={handleSearch} />
-
-      <div ref={gridTopRef} className={styles.gridTop} />
 
       {isLoading && movies.length === 0 && <Loader />}
       {!isLoading && hasError && <ErrorMessage />}
@@ -88,19 +78,28 @@ export default function App() {
         <>
           <MovieGrid movies={movies} onSelect={setSelected} />
 
-          {!ioSupported && page < totalPages && (
-            <button type="button" onClick={handleLoadMore}>
-              Load more
-            </button>
+          {/* Пагинация только если страниц > 1 (по ТЗ) */}
+          {totalPages > 1 && (
+            <ReactPaginate
+              pageCount={Math.min(totalPages, 500)} // лимит TMDB
+              pageRangeDisplayed={5}
+              marginPagesDisplayed={1}
+              onPageChange={handlePageChange}
+              forcePage={page - 1}
+              containerClassName={styles.pagination}
+              activeClassName={styles.active}
+              nextLabel="→"
+              previousLabel="←"
+            />
           )}
-
-          <div ref={sentinelRef} style={{ height: 1 }} aria-hidden="true" />
 
           {isLoading && movies.length > 0 && <Loader />}
         </>
       )}
 
-      {selected && <MovieModal movie={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <MovieModal movie={selected} onClose={() => setSelected(null)} />
+      )}
 
       <Toaster position="top-right" />
     </div>
